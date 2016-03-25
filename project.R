@@ -1,40 +1,10 @@
-getwd()
-setwd("/Users/xx/Downloads/Coursera_MachineLearning/Chapter 4")
-, sep="\t"
-
-training <- read.table(file="pml-training.csv",sep = ",", header=T)
-summary(training)
-
-training[!complete.cases(training),]
-
-
-is.fact <- sapply(training, is.factor)
-factors.df <- training[, is.fact]
-lapply(factors.df, levels)
-training<-as.numeric(as.character(training)) #first convert each column into numeric if it is from factor
-x[is.na(x)] =median(x, na.rm=TRUE) 
-
-vars<-grep("^[v][a][r]", names(training), value=TRUE)
-training[,vars]
-
-preProc<-preProcess(training[,vars], method="pca",thresh=0.8)
-
-modFit <- randomForest(classe ~ ., data=training,prox=TRUE, ntree=10, importance=TRUE,na.action = na.exclude)
-modFit <-train(y~.,data=vowel.test, method="rf", prox=TRUE,importance = TRUE)
-varImp(modFit, scale = TRUE)
-modFit <-train(y~.,data=training, method="rf", prox=TRUE,ntree=10, importance = TRUE)
-
-training$X <-NULL
-training$cvtd_timestamp<-NULL
-
-
-
 library(caret)
 library(rpart)
 library(rpart.plot)
 library(rattle)
 library(AppliedPredictiveModeling)
 library(randomForest)
+
 set.seed(11111)
 
 trainUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
@@ -47,12 +17,49 @@ inTrain <- createDataPartition(y=training$classe, p=0.6, list=FALSE)
 myTraining <- training[inTrain, ]; myTesting <- training[-inTrain, ]
 dim(myTraining); dim(myTesting)
 
-#data cleaning and delete missing NA variables#
-myTraining <- myTraining[c(-1)]
 
-missingData = is.na(myTraining)
-omitColumns = which(colSums(missingData) > 11000)
-myTraining = myTraining[, -omitColumns]
-myDataNZV <- nearZeroVar(myTraining, saveMetrics=TRUE)
+#data cleaning and delete missing NA variables and first 5 variables which is not useful#
+training <- training[c(-1:-5)]
+
+missingData = is.na(training)
+omitColumns = which(colSums(missingData) > 19000)
+training = training[, -omitColumns]
+myDataNZV <- nearZeroVar(training, saveMetrics=TRUE)
 myDataNZV
+
+#seperate into training and testing data sets
+inTrain <- createDataPartition(y=training$classe, p=0.6, list=FALSE)
+myTraining <- training[inTrain, ]
+myTesting <- training[-inTrain, ]
+dim(myTraining)
+dim(myTesting)
+
+#model
+set.seed(11111)
+modFit1 <- randomForest(classe ~ ., data=myTraining)
+varImp(modFit1)
+
+#predict on test data
+prediction1 <- predict(modFit1, myTesting, type = "class")
+cmrf <- confusionMatrix(prediction1, myTesting$classe)
+cmrf
+
+#predict on the 20 observation
+vars <- colnames(myTraining[, -55])  # remove the classe column
+testing <- testing[vars]         
+
+# make test data into the same type as training data
+for (i in 1:length(testing) ) {
+  for(j in 1:length(myTraining)) {
+    if( length( grep(names(myTraining[i]), names(testing)[j]) ) == 1)  {
+      class(testing[j]) <- class(myTraining[i])
+    }      
+  }      
+  
+testing <- rbind(myTraining[2, -55] , testing)
+testing <- testing[-1,]
+
+prediction2 <- predict(modFit1, testing, type = "class")
+prediction2
+
 
