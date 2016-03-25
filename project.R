@@ -1,5 +1,5 @@
 getwd()
-setwd("/Users/lu/Downloads/Coursera_MachineLearning/Chapter 4")
+setwd("/Users/xx/Downloads/Coursera_MachineLearning/Chapter 4")
 , sep="\t"
 
 training <- read.table(file="pml-training.csv",sep = ",", header=T)
