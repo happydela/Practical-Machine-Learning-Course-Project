@@ -4,10 +4,6 @@ author: Happydela
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
-```
-
 ## Overview
 The goal of this analysis is to train a model based on the Human Activity Recognition data (http://groupware.les.inf.puc-rio.br/har) to try to predict how well the exercises are performed.  The "classe" is a rating of how well the exercise was performed and will be the value we are attempting to predict from the other data collected from accelerometers on the belt, forearm, arm, and dumbell of 6 participants.
 
@@ -103,4 +99,4 @@ testing <- testing[vars]
 #prediction3 <- predict(modFit1, testing, type = "class")
 #prediction3
 
-```{r, echo=FALSE}
+```
