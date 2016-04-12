@@ -1,0 +1,101 @@
+---
+title: "Practical Machine Learning Assignment"
+author: Happydela
+output: html_document
+---
+
+## Overview
+The goal of this analysis is to train a model based on the Human Activity Recognition data (http://groupware.les.inf.puc-rio.br/har) to try to predict how well the exercises are performed.  The "classe" is a rating of how well the exercise was performed and will be the value we are attempting to predict from the other data collected from accelerometers on the belt, forearm, arm, and dumbell of 6 participants.
+
+## Approach
+Random forest, and rpart with k-fold validation are performed, and out of sample accuracy is also checked.
+
+## Load and Pre-process the Data
+
+```{r}
+library(caret)
+library(rpart)
+library(AppliedPredictiveModeling)
+
+trainUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+training <- read.csv(url(trainUrl), na.strings=c("NA","#DIV/0!",""))
+testing <- read.csv(url(testUrl), na.strings=c("NA","#DIV/0!",""))
+
+#data cleaning and delete missing NA variables and first 5 variables which is not useful#
+training <- training[c(-1:-5)]
+
+missingData = is.na(training)
+omitColumns = which(colSums(missingData) > 19000)
+training = training[, -omitColumns]
+myDataNZV <- nearZeroVar(training, saveMetrics=TRUE)
+
+# Set the random seed for reproducibility
+set.seed(11111)
+
+# Partition the data into Training and Validation
+library(caret)
+
+inTrain <- createDataPartition(y=training$classe, p=0.6, list=FALSE)
+myTraining <- training[inTrain, ]
+myTesting <- training[-inTrain, ]
+
+```
+
+## Model using Random Forest
+The caret package allows for using cross-validation. The random forecast took a whole. And I am using 3-fold cross validation here.  
+```{r}
+# train the model - random forest with k-fold cross validation
+
+modFit1 <- train(classe ~ ., data=myTraining, trControl=trainControl(method = "cv", number = 3), method="rf")
+
+#predict on test data
+#prediction1 <- predict(modFit1, myTesting, type = "class")
+prediction1 <- predict(modFit1, myTesting)
+cmrf <- confusionMatrix(prediction1, myTesting$classe)
+```
+The confusion matrix shows that this model performs well against the validation data.  An out of sample accuracy of 99.7% means this model is very good at predicting values outside the training sample. Error on the test datasets is 1-0.9969=0.0031
+```{r}
+cmrf$table
+cmrf$overall[1]
+```
+
+## Model using RPART
+For the sake of comparison, I also tried the Rpart model with 3-fold cross validation using the Caret package rpart method.
+```{r}
+library(rpart)
+modFit2 <- train(classe ~ .,data=myTraining,trControl=trainControl(method = "cv", number = 3),  method="rpart")
+
+prediction2 <- predict(modFit2, myTesting)
+cmrf2 <- confusionMatrix(prediction2, myTesting$classe)
+```
+The following confusion matrix shows that the this model is not good at predicting for values outside the trianing data.  An accuracy on 54% which also shows this model is not good outside the training data.
+```{r}
+cmrf2$table
+cmrf2$overall[1]
+```
+
+## Conclusion and Test Results
+The random forest model has been choosen as the best fit for predicting the classe.  This model has the best expectation of out of sample accuracy - 99.7%.  
+Run the following code on test data, and got the following result:
+ B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B 
+```{r}
+#predict on the 20 observation
+vars <- colnames(myTraining[, -55])  # remove the class column
+testing <- testing[vars]         
+
+# make test data into the same type as training data
+#for (i in 1:length(testing) ) {
+#  for(j in 1:length(myTraining)) {
+#    if( length( grep(names(myTraining[i]), names(testing)[j]) ) == 1)  {
+#      class(testing[j]) <- class(myTraining[i])
+#    }      
+#  }      
+  
+#testing <- rbind(myTraining[2, -55] , testing)
+#testing <- testing[-1,]
+
+#prediction3 <- predict(modFit1, testing, type = "class")
+#prediction3
+```
